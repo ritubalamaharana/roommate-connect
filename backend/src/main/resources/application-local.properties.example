@@ -1,0 +1,2 @@
+spring.datasource.password=YourStrongPassword123
+spring.jpa.show-sql=true
