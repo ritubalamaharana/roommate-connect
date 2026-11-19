@@ -1,6 +1,8 @@
 package com.roommateconnect.controller;
 
 import com.roommateconnect.dto.ApiResponse;
+import com.roommateconnect.dto.AuthResponse;
+import com.roommateconnect.dto.LoginRequest;
 import com.roommateconnect.dto.RegisterRequest;
 import com.roommateconnect.dto.UserResponse;
 import com.roommateconnect.service.AuthService;
@@ -26,5 +28,11 @@ public class AuthController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Registration successful", user));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
+        AuthResponse response = authService.login(request);
+        return ResponseEntity.ok(ApiResponse.success("Login successful", response));
     }
 }

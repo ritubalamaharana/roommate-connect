@@ -17,14 +17,12 @@ public record RegisterRequest(
         @Size(max = 150, message = "Email must be at most 150 characters")
         String email,
 
-        // BCrypt only uses the first 72 bytes, so we cap the length at 72.
         @NotBlank(message = "Password is required")
         @Size(min = 8, max = 72, message = "Password must be 8 to 72 characters")
         @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).+$",
                 message = "Password must contain at least one letter and one number")
         String password,
 
-        // Optional. Defaults to SEEKER. ADMIN is rejected in the service.
         Role role
 ) {
 }

@@ -2,7 +2,6 @@ package com.roommateconnect.exception;
 
 import org.springframework.http.HttpStatus;
 
-/** Base class for errors we throw on purpose. Carries the HTTP status to return. */
 public class ApiException extends RuntimeException {
 
     private final HttpStatus status;

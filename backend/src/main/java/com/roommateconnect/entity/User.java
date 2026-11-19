@@ -48,7 +48,6 @@ public class User {
         this.createdAt = LocalDateTime.now(ZoneOffset.UTC);
     }
 
-    /** Keeps both sides of the relationship in sync. Duplicates are ignored by the Set. */
     public void addRole(Role role) {
         roles.add(new UserRole(this, role));
     }

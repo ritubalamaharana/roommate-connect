@@ -32,7 +32,6 @@ public class UserRole {
         this.role = role;
     }
 
-    // Two UserRole objects in one user's set are "the same" if the role is the same.
     @Override
     public boolean equals(Object o) {
         return o instanceof UserRole other && role == other.role;

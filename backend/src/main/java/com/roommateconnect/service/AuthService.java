@@ -1,11 +1,16 @@
 package com.roommateconnect.service;
 
+import com.roommateconnect.dto.AuthResponse;
+import com.roommateconnect.dto.LoginRequest;
 import com.roommateconnect.dto.RegisterRequest;
 import com.roommateconnect.dto.UserResponse;
+import com.roommateconnect.entity.AccountStatus;
 import com.roommateconnect.entity.Role;
 import com.roommateconnect.entity.User;
 import com.roommateconnect.exception.BadRequestException;
 import com.roommateconnect.exception.ConflictException;
+import com.roommateconnect.exception.ForbiddenException;
+import com.roommateconnect.exception.UnauthorizedException;
 import com.roommateconnect.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -25,10 +30,10 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     @Transactional
     public UserResponse register(RegisterRequest request) {
-        // "Test@Mail.com" and "test@mail.com" must be the same account
         String email = request.email().trim().toLowerCase(Locale.ROOT);
 
         Role role = request.role() == null ? Role.SEEKER : request.role();
@@ -47,14 +52,33 @@ public class AuthService {
         user.addRole(role);
 
         try {
-            // saveAndFlush sends the INSERT now, so a duplicate is caught right here
             userRepository.saveAndFlush(user);
         } catch (DataIntegrityViolationException ex) {
-            // Two people registering the same email at the same moment: the database unique key wins
             throw new ConflictException("Email is already registered");
         }
 
         log.info("New user registered with id={}", user.getId());
         return UserResponse.from(user);
+    }
+
+    @Transactional(readOnly = true)
+    public AuthResponse login(LoginRequest request) {
+        String email = request.email().trim().toLowerCase(Locale.ROOT);
+
+        User user = userRepository.findByEmailWithRoles(email)
+                .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
+
+        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            throw new UnauthorizedException("Invalid email or password");
+        }
+
+        if (user.getAccountStatus() == AccountStatus.SUSPENDED) {
+            throw new ForbiddenException("This account is suspended");
+        }
+
+        String token = jwtService.generateAccessToken(user);
+        log.info("User id={} logged in", user.getId());
+
+        return new AuthResponse(token, "Bearer", jwtService.getAccessTokenSeconds(), UserResponse.from(user));
     }
 }

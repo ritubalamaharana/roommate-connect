@@ -5,7 +5,6 @@ import com.roommateconnect.entity.User;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/** What the API returns about a user. Never includes the password hash. */
 public record UserResponse(
         Long id,
         String fullName,

@@ -15,7 +15,6 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // @Valid failures: 400 with a message per field
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Map<String, String>>> handleValidation(
             MethodArgumentNotValidException ex) {
@@ -30,7 +29,6 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Validation failed", fieldErrors));
     }
 
-    // Our own errors (conflict, bad request, later: not found, forbidden...)
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiResponse<Void>> handleApiException(ApiException ex) {
         return ResponseEntity
@@ -38,7 +36,6 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.<Void>error(ex.getMessage(), null));
     }
 
-    // Broken JSON, or a value that does not fit (for example an unknown role name)
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse<Void>> handleUnreadable(HttpMessageNotReadableException ex) {
         return ResponseEntity
