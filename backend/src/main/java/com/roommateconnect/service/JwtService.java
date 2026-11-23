@@ -16,7 +16,7 @@ import java.util.List;
 @Service
 public class JwtService {
 
-    private static final String ISSUER = "roommate-connect";
+    public static final String ISSUER = "roommate-connect";
 
     private final JwtEncoder jwtEncoder;
     private final long accessTokenMinutes;

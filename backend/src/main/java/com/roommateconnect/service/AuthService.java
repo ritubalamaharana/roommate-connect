@@ -2,6 +2,7 @@ package com.roommateconnect.service;
 
 import com.roommateconnect.dto.AuthResponse;
 import com.roommateconnect.dto.LoginRequest;
+import com.roommateconnect.dto.RefreshTokenRequest;
 import com.roommateconnect.dto.RegisterRequest;
 import com.roommateconnect.dto.UserResponse;
 import com.roommateconnect.entity.AccountStatus;
@@ -31,6 +32,8 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
+    private final EmailVerificationService emailVerificationService;
 
     @Transactional
     public UserResponse register(RegisterRequest request) {
@@ -57,11 +60,13 @@ public class AuthService {
             throw new ConflictException("Email is already registered");
         }
 
+        emailVerificationService.sendVerification(user);
+
         log.info("New user registered with id={}", user.getId());
         return UserResponse.from(user);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         String email = request.email().trim().toLowerCase(Locale.ROOT);
 
@@ -72,13 +77,39 @@ public class AuthService {
             throw new UnauthorizedException("Invalid email or password");
         }
 
+       if (user.getAccountStatus() == AccountStatus.SUSPENDED) {
+            throw new ForbiddenException("This account is suspended");
+        }
+
+        String accessToken = jwtService.generateAccessToken(user);
+        String refreshToken = refreshTokenService.issue(user);
+        log.info("User id={} logged in", user.getId());
+
+        return new AuthResponse(accessToken, refreshToken, "Bearer",
+                jwtService.getAccessTokenSeconds(), UserResponse.from(user));
+    }
+
+    public AuthResponse refresh(RefreshTokenRequest request) {
+        RefreshTokenService.RotatedToken rotated = refreshTokenService.rotate(request.refreshToken());
+        String accessToken = jwtService.generateAccessToken(rotated.user());
+
+        return new AuthResponse(accessToken, rotated.refreshToken(), "Bearer",
+                jwtService.getAccessTokenSeconds(), UserResponse.from(rotated.user()));
+    }
+
+    public void logout(RefreshTokenRequest request) {
+        refreshTokenService.revoke(request.refreshToken());
+    }
+
+    @Transactional(readOnly = true)
+    public UserResponse getCurrentUser(Long userId) {
+        User user = userRepository.findByIdWithRoles(userId)
+                .orElseThrow(() -> new UnauthorizedException("User no longer exists"));
+
         if (user.getAccountStatus() == AccountStatus.SUSPENDED) {
             throw new ForbiddenException("This account is suspended");
         }
 
-        String token = jwtService.generateAccessToken(user);
-        log.info("User id={} logged in", user.getId());
-
-        return new AuthResponse(token, "Bearer", jwtService.getAccessTokenSeconds(), UserResponse.from(user));
+        return UserResponse.from(user);
     }
 }
