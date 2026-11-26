@@ -1,8 +1,11 @@
 package com.roommateconnect.controller;
 
 import com.roommateconnect.dto.ApiResponse;
+import com.roommateconnect.dto.PreferencesRequest;
+import com.roommateconnect.dto.PreferencesResponse;
 import com.roommateconnect.dto.ProfileResponse;
 import com.roommateconnect.dto.ProfileUpdateRequest;
+import com.roommateconnect.service.PreferenceService;
 import com.roommateconnect.service.ProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProfileController {
 
     private final ProfileService profileService;
+    private final PreferenceService preferenceService;
 
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<ProfileResponse>> getMyProfile(@AuthenticationPrincipal Jwt jwt) {
@@ -35,5 +39,21 @@ public class ProfileController {
         Long userId = Long.valueOf(jwt.getSubject());
         return ResponseEntity.ok(
                 ApiResponse.success("Profile updated", profileService.updateMyProfile(userId, request)));
+    }
+
+    @GetMapping("/preferences")
+    public ResponseEntity<ApiResponse<PreferencesResponse>> getMyPreferences(@AuthenticationPrincipal Jwt jwt) {
+        Long userId = Long.valueOf(jwt.getSubject());
+        return ResponseEntity.ok(
+                ApiResponse.success("Preferences", preferenceService.getMyPreferences(userId)));
+    }
+
+    @PutMapping("/preferences")
+    public ResponseEntity<ApiResponse<PreferencesResponse>> updateMyPreferences(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody PreferencesRequest request) {
+        Long userId = Long.valueOf(jwt.getSubject());
+        return ResponseEntity.ok(
+                ApiResponse.success("Preferences updated", preferenceService.updateMyPreferences(userId, request)));
     }
 }
