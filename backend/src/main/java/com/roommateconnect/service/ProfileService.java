@@ -2,15 +2,11 @@ package com.roommateconnect.service;
 
 import com.roommateconnect.dto.ProfileResponse;
 import com.roommateconnect.dto.ProfileUpdateRequest;
-import com.roommateconnect.entity.AccountStatus;
 import com.roommateconnect.entity.User;
 import com.roommateconnect.entity.UserProfile;
 import com.roommateconnect.exception.BadRequestException;
 import com.roommateconnect.exception.ConflictException;
-import com.roommateconnect.exception.ForbiddenException;
-import com.roommateconnect.exception.UnauthorizedException;
 import com.roommateconnect.repository.UserProfileRepository;
-import com.roommateconnect.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -23,19 +19,20 @@ import java.time.ZoneOffset;
 @RequiredArgsConstructor
 public class ProfileService {
 
-    private final UserRepository userRepository;
+    private final ActiveUserService activeUserService;
     private final UserProfileRepository profileRepository;
 
     @Transactional(readOnly = true)
     public ProfileResponse getMyProfile(Long userId) {
-        User user = loadActiveUser(userId);
+        User user = activeUserService.loadActiveUser(userId);
+        // No profile yet: show an empty one (it is only saved on the first PUT)
         UserProfile profile = profileRepository.findByUserId(userId).orElseGet(UserProfile::new);
         return ProfileResponse.from(user, profile);
     }
 
     @Transactional
     public ProfileResponse updateMyProfile(Long userId, ProfileUpdateRequest request) {
-        User user = loadActiveUser(userId);
+        User user = activeUserService.loadActiveUser(userId);
         validateBusinessRules(request);
 
         UserProfile profile = profileRepository.findByUserId(userId).orElseGet(() -> {
@@ -67,15 +64,6 @@ public class ProfileService {
         }
 
         return ProfileResponse.from(user, profile);
-    }
-
-    private User loadActiveUser(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UnauthorizedException("User no longer exists"));
-        if (user.getAccountStatus() == AccountStatus.SUSPENDED) {
-            throw new ForbiddenException("This account is suspended");
-        }
-        return user;
     }
 
     private void validateBusinessRules(ProfileUpdateRequest request) {

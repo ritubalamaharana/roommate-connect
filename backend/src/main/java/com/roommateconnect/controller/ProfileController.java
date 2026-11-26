@@ -5,14 +5,17 @@ import com.roommateconnect.dto.PreferencesRequest;
 import com.roommateconnect.dto.PreferencesResponse;
 import com.roommateconnect.dto.ProfileResponse;
 import com.roommateconnect.dto.ProfileUpdateRequest;
+import com.roommateconnect.dto.PublicProfileResponse;
 import com.roommateconnect.service.PreferenceService;
 import com.roommateconnect.service.ProfileService;
+import com.roommateconnect.service.ProfileViewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,6 +28,7 @@ public class ProfileController {
 
     private final ProfileService profileService;
     private final PreferenceService preferenceService;
+    private final ProfileViewService profileViewService;
 
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<ProfileResponse>> getMyProfile(@AuthenticationPrincipal Jwt jwt) {
@@ -55,5 +59,14 @@ public class ProfileController {
         Long userId = Long.valueOf(jwt.getSubject());
         return ResponseEntity.ok(
                 ApiResponse.success("Preferences updated", preferenceService.updateMyPreferences(userId, request)));
+    }
+
+    @GetMapping("/{userId}")
+    public ResponseEntity<ApiResponse<PublicProfileResponse>> viewProfile(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Long userId) {
+        Long viewerId = Long.valueOf(jwt.getSubject());
+        return ResponseEntity.ok(
+                ApiResponse.success("Profile", profileViewService.viewProfile(viewerId, userId)));
     }
 }
